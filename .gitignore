@@ -7,7 +7,7 @@
 *.editorconfig
 *.Build.props
 *.properties
-*.yml
+docker-compose.yml
 
 !/tests/
 !/infra/

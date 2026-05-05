@@ -1,0 +1,159 @@
+name: CI Setup and Test Suite
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
+  actions: read
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download App from Drive
+        run: |
+          pip install gdown
+          gdown 1aKeWNwjjwifYwk5d0aanduzMpW48FES2 -O app.zip
+          unzip app.zip -d ./temp_app
+
+          mkdir -p api web
+
+          cp -r ./temp_app/ExameDesenvolvedorDeTestes/api/* ./api/ 2>/dev/null || cp -r ./temp_app/api/* ./api/ 2>/dev/null || true
+          cp -r ./temp_app/ExameDesenvolvedorDeTestes/web/* ./web/ 2>/dev/null || cp -r ./temp_app/web/* ./web/ 2>/dev/null || true
+
+      - name: Inject Custom Tests (Mirror Structure)
+        run: |
+          mkdir -p ./api/MinhasFinancas.Tests.Unit/
+
+          if [ -d "./tests/api/MinhasFinancas.Tests.Unit" ]; then
+            cp -v ./tests/api/MinhasFinancas.Tests.Unit/*.cs ./api/MinhasFinancas.Tests.Unit/
+            echo "Testes injetados com sucesso."
+            ls ./api/MinhasFinancas.Tests.Unit/
+          else
+            echo "Erro: Pasta de testes não encontrada no repositório!"
+            exit 1
+          fi
+
+          # mkdir -p ./api/MinhasFinancas.Tests.Integration
+          # cp -v ./tests/api/MinhasFinancas.Tests.Integration/* ./api/MinhasFinancas.Tests.Integration/ 2>/dev/null || true
+
+          # cp -v ./tests/web/vitest/* ./web/src/tests/ 2>/dev/null || true
+
+      - name: Flatten Infrastructure Folder
+        run: |
+          if [ -d "./infra" ]; then
+            cp -rn ./infra/* . 2>/dev/null || true
+            rm -rf ./infra
+            echo "Pasta infra achatada para a raiz."
+          fi
+
+          if [ -d "./ExameDesenvolvedorDeTestes" ]; then
+            cp -rn ./ExameDesenvolvedorDeTestes/* . 2>/dev/null || true
+            rm -rf ./ExameDesenvolvedorDeTestes
+            echo "Pasta intermediária removida."
+          fi
+
+      - name: Fix NuGet Config (Remove Windows Paths)
+        run: |
+          sed -i '/Microsoft Visual Studio Offline Packages/d' ./api/nuget.config
+
+      - name: Upload Prepared App
+        uses: actions/upload-artifact@v7
+        with:
+          name: prepared-app
+          path: .
+
+  unit-tests:
+    name: Unit Tests on ${{ matrix.os }}
+    needs: setup-environment
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    steps:
+      - name: Download Prepared App
+        uses: actions/download-artifact@v8
+        with:
+          name: prepared-app
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Run Unit Tests
+        shell: bash
+        run: |
+          cd infra/api 2>/dev/null || cd api 2>/dev/null || true
+
+          PROJECT_PATH=$(find . -name "MinhasFinancas.Tests.Unit.csproj" | head -n 1)
+
+          dotnet restore "$PROJECT_PATH"
+          dotnet test "$PROJECT_PATH" --configuration Release --no-restore
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.os }}
+          path: "**/*.trx"
+
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    needs: setup-environment
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ csharp, javascript-typescript ]
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: prepared-app
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: +security-and-quality
+
+      - name: Build Application
+        if: ${{ matrix.build-mode == 'manual' }}
+        run: dotnet build api/MinhasFinancas.slnx
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{matrix.language}}"
