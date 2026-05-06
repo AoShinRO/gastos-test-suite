@@ -28,7 +28,7 @@ public sealed class CategoriaTests : IDisposable
             .Where(p => p.IsShadowProperty())
             .Select(p => p.Name)
             .ToList();
-        // Deveria ser Empty
+        // Evidencia que existem shadow properties
         Assert.NotEmpty(shadowProperties);
     }
 
