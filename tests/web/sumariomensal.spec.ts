@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 */
 test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
 
-    const API_URL = 'http://localhost:5173';
+    const API_URL = 'http://127.0.0.1:5173';
 
     test('Deve provar o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
         // Intercepta a chamada da API de totais por categoria
