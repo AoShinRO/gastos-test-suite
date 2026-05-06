@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 */
 test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
 
-    const API_URL = 'http://web:5173'; // URL interna do Docker, use http://localhost:5173 para rodar na sua maquina.
+    const API_URL = 'http://localhost:5173';
 
     test('Deve provar o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
         // Intercepta a chamada da API de totais por categoria

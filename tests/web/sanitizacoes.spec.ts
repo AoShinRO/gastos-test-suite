@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
 
-  const API_URL = 'http://api:80/api/v1'; // URL interna do Docker, use http://localhost:5000 para rodar na sua maquina.
+  const API_URL = 'http://localhost:5135/api/v1';
 
   /**
    * PROVA DO ITEM 8: Stored XSS via API

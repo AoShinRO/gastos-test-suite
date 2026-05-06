@@ -112,14 +112,12 @@ public sealed class TransacaoTests : IDisposable
         var transacao = new Transacao();
         var contexto = new ValidationContext(transacao) { MemberName = nameof(Transacao.Valor) };
         var resultados = new List<ValidationResult>();
-        // O Validator.TryValidateValue com essa sobrecarga vai validar o 
-        // valor 'double' contra as regras da propriedade 'Valor' da classe Transacao.
-        // Ele retorna 'true' se o valor passar no [Range].
-        bool aprovadoPeloAtributo = Validator.TryValidateValue(
+
+        // Usamos TryValidateProperty para validar os atributos da propriedade 'Valor'
+        bool aprovadoPeloAtributo = Validator.TryValidateProperty(
             valorIncompativel, 
             contexto, 
-            resultados, 
-            true // Indica que deve validar todos os atributos da propriedade
+            resultados
         );
         
         Assert.True(aprovadoPeloAtributo, "Bug Confirmado: O Atributo [Range] deveria bloquear valores maiores que o limite acima do tipo decimal.");
