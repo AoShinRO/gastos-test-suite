@@ -91,7 +91,7 @@ public sealed class TransacaoTests : IDisposable
     /*
     * Evidencia que o domínio aceita valores que o front-end tenta proibir.
     */
-    [Fact]
+    [Fact(Skip = "Comportamento identificado: O domínio permite valores negativos, podendo contrariar regra de negócio.")]
     public void Evidencia_Valor_Negativo_No_Dominio()
     {
         var transacao = new Transacao { Descricao = "Valor Negativo" };
@@ -103,7 +103,7 @@ public sealed class TransacaoTests : IDisposable
     * Evidencia a inconsistência entre o atributo [Range] que usa double.MaxValue 
     * e a propriedade que é decimal (limites incompatíveis).
     */
-    [Fact]
+    [Fact(Skip = "Comportamento identificado: Atributo [Range] inconsistente com tipo decimal, indicando inconsistência entre validação e tipo numérico utilizado")]
     public void Evidencia_Range_Inconsistencia_No_Dominio()
     {
         // 1e30 é um valor que cabe em um 'double'

@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-/*
-* Evidencia falha de Lógica Contábil na interface do usuário
-*/
-test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
+test.describe('PoC de Lógica no Dashboard (MonthlySummary)', () => {
 
     const API_URL = 'http://localhost:5173';
-
-    test('Deve provar o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
+    /*
+    * Este teste evidencia falha de lógica contábil na interface do usuário
+    */
+    test('Evidencia o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
         // Intercepta a chamada da API de totais por categoria
         await page.route('**/api/v1.0/totais/categorias*', async route => {
             const json = {
@@ -37,7 +36,8 @@ test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
         const fillColor = await chartSector.getAttribute('fill');
         console.log(`Cor detectada para Aluguel com saldo positivo: ${fillColor}`);
 
-        // Se a cor for verde (#10b981), o bug de lógica está provado!
+        // Se a cor for verde (#10b981), evidencia falha de lógica contábil,
+        // deveria ser vermelho (#ef4444) pois é despesa.
         expect(fillColor).toBe('#10b981');
     });
 });

@@ -16,12 +16,12 @@ public sealed class PessoaTests : IDisposable
         // Valida Regra de Negócio - Maioridade
         yield return new object[] { "Pessoa com 18 anos aniversariante de hoje", DateTime.Today.AddYears(-18), true };
 
-        // Testes Cronológicos - Prova Inconsistencia em Data Nascimento impossiveis ao ser humano.
+        // Testes Cronológicos - Evidencia Inconsistencia em Data Nascimento impossiveis ao ser humano.
         yield return new object[] { "Pessoa com 0 anos", DateTime.Now, false };
         yield return new object[] { "Pessoa com data futura", DateTime.Today.AddYears(3), false };
         yield return new object[] { "Pessoa com data histórica", new DateTime(1, 1, 1), true };   
 
-        // Testes de String - Prova Falta de Sanitização de dados
+        // Testes de String - Evidencia Falta de Sanitização de dados
         yield return new object[] { new string('A', 5000), DateTime.Today.AddYears(-20), true }; 
         yield return new object[] { "<script>alert(1)</script>", DateTime.Today.AddYears(-18), true };
         yield return new object[] { "", DateTime.Today.AddYears(-25), true };        

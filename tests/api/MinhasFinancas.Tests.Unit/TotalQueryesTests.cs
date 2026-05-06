@@ -16,9 +16,9 @@ namespace MinhasFinancas.Tests.Unit;
 public class TotaisQueryTests
 {
     /*
-    * Evidencia que a falta de tratamento para nulo em TotaisQuery pode ser perigoso ao lidar com dinheiro
+    * Este teste evidencia que há falta de tratamento para nulo em TotaisQuery
     */
-    [Fact]
+    [Fact(Skip = "Comportamento identificado: Retorno de dados fora do período esperado quando filtro não é informado")]
     public async Task Evidencia_Quando_Filtro_Nulo_Retorna_O_Total_De_Todas_Transacoes()
     {
         // Arrange

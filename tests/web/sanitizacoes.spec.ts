@@ -5,7 +5,7 @@ test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
   const API_URL = 'http://127.0.0.1:5135/api/v1.0';
 
   /**
-   * PROVA DO ITEM 8: Stored XSS via API
+   * Este teste evidencia a falta de sanitização de dados na criação de Pessoas via API.
    */
   test('Deveria recusar script malicioso (Stored XSS)', async ({ request }) => {
     const xssPayload = "<script>alert('XSS_REAL')</script>";
