@@ -6,7 +6,6 @@ test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
 
   /**
    * PROVA DO ITEM 8: Stored XSS via API
-   * Tenta persistir um script malicioso no banco de dados.
    */
   test('Deveria recusar script malicioso (Stored XSS)', async ({ request }) => {
     const xssPayload = "<script>alert('XSS_REAL')</script>";
@@ -26,7 +25,7 @@ test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
   });
 
   /**
-   * A API é segura contra nomes gigantes, previne regressão de segurança.
+   * A API é segura contra nomes gigantes
    */
   test('Deve recusar nome gigante via API (Tentativa Bypass de Validação)', async ({ request }) => {
     const hugeName = 'A'.repeat(1000);
@@ -39,12 +38,11 @@ test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
     });
 
     console.log(`Status do Bypass de Comprimento: ${response.status()}`);
-    // Precisa ser 400 para ser considerado seguro.    
     expect(response.status()).toBe(400);
   });
 
   /**
-   * A API é segura contra valores negativos, previne regressão de segurança.
+   * A API é segura contra valores negativos
    */
   test('Deve recusar valor negativo via API (Tentativa Bypass de Regra de Negócio)', async ({ request }) => {
     const response = await request.post(`${API_URL}/Transacoes`, {
@@ -59,7 +57,6 @@ test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
     });
 
     console.log(`Status do Bypass de Valor Negativo: ${response.status()}`);
-    // Precisa ser 400 para ser considerado seguro.
     expect(response.status()).toBe(400);
   });
 });

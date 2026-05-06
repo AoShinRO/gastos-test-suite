@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 */
 test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
 
-    const API_URL = 'http://127.0.0.1:5173';
+    const API_URL = 'http://localhost:5173';
 
     test('Deve provar o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
         // Intercepta a chamada da API de totais por categoria
@@ -29,15 +29,12 @@ test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
         // Navega para a página inicial
         await page.goto(API_URL, { waitUntil: 'networkidle', timeout: 60000 });
 
-        // Espera o gráfico renderizar (aumentado timeout para segurança no CI)
+        // Espera o gráfico renderizar
         const chartSector = page.locator('.recharts-pie-sector path').first();
         await expect(chartSector).toBeVisible({ timeout: 60000 });
 
         // EVIDÊNCIA DO BUG:
-        // O sistema deveria saber que 'Aluguel' é Despesa e pintar de Vermelho (#ef4444).
-        // Mas, devido à lógica falha, ele vai pintar de Verde (#10b981) porque o saldo é 100.
         const fillColor = await chartSector.getAttribute('fill');
-
         console.log(`Cor detectada para Aluguel com saldo positivo: ${fillColor}`);
 
         // Se a cor for verde (#10b981), o bug de lógica está provado!

@@ -150,6 +150,8 @@ jobs:
         run: |
           API_PATH=$(find api -name "MinhasFinancas.API.csproj" | head -n 1)
           dotnet run --project "$API_PATH" &
+          echo "Aguardando API subir..."
+          sleep 15
         env:
           ASPNETCORE_ENVIRONMENT: Development
 
