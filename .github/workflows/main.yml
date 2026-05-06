@@ -136,8 +136,10 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Dependencies
-        run: bun install
+      - name: Install Playwright and Dependencies
+        run: |
+          bun install
+          bun add @playwright/test -d
         working-directory: web
 
       - name: Install Playwright Browsers

@@ -1,7 +1,9 @@
 using Xunit;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using MinhasFinancas.Domain.Entities;
 using MinhasFinancas.Infrastructure.Data;
@@ -123,7 +125,7 @@ public sealed class TransacaoTests : IDisposable
         Assert.True(aprovadoPeloAtributo, "Bug Confirmado: O Atributo [Range] deveria bloquear valores maiores que o limite acima do tipo decimal.");
     }
 
-    private readonly MinhasFinancasDbContext _context;
+    private MinhasFinancasDbContext? _context;
 
     /*
     * Valida exclusão em cascata de transações ao excluir pessoa
