@@ -9,7 +9,7 @@ test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
 
     test('Deve provar o bug de classificação errônea por saldo (Despesa virando Receita)', async ({ page }) => {
         // Intercepta a chamada da API de totais por categoria
-        await page.route('**/api/v1/totais/categorias*', async route => {
+        await page.route('**/api/v1.0/totais/categorias*', async route => {
             const json = {
                 items: [
                     {
@@ -19,7 +19,7 @@ test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
                         saldo: 100 // Saldo positivo, mas a natureza da categoria é DESPESA
                     }
                 ],
-                total: 1,
+                totalCount: 1,
                 page: 1,
                 pageSize: 10
             };
@@ -27,11 +27,11 @@ test.describe('PoC de Lógica de Dashboard (MonthlySummary)', () => {
         });
 
         // Navega para a página inicial
-        await page.goto(API_URL, { waitUntil: 'networkidle', timeout: 180000 });
+        await page.goto(API_URL, { waitUntil: 'networkidle', timeout: 60000 });
 
-        // Espera o gráfico renderizar
+        // Espera o gráfico renderizar (aumentado timeout para segurança no CI)
         const chartSector = page.locator('.recharts-pie-sector path').first();
-        await expect(chartSector).toBeVisible({ timeout: 180000 });
+        await expect(chartSector).toBeVisible({ timeout: 60000 });
 
         // EVIDÊNCIA DO BUG:
         // O sistema deveria saber que 'Aluguel' é Despesa e pintar de Vermelho (#ef4444).
