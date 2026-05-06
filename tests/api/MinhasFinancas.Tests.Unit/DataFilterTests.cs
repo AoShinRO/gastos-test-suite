@@ -4,16 +4,18 @@ using Xunit;
 
 namespace MinhasFinancas.Tests.Unit;
 
-/// <summary>
-/// Prova o bug de arredondamento de data ao usar .AddTicks(-1) com SQL Server.
-/// </summary>
+#pragma warning disable CS1591
+#pragma warning disable CA1707
+
 public sealed class DataFilterTests : IDisposable
 {
-    /// <summary>
-    /// Este teste prova que o uso de .AddTicks(-1) cria uma data tão próxima do próximo mês
-    /// que o SQL Server (simulado por SqlDateTime) a arredonda para cima, 
-    /// causando inclusão indevida de registros do mês seguinte.
-    /// </summary>
+    /*
+    * Este teste prova que o uso de .AddTicks(-1) cria uma data tão próxima do próximo mês
+    * que o SQL Server (simulado por SqlDateTime) a arredonda para cima, 
+    * causando inclusão indevida de registros do mês seguinte.
+    * Manter Normalize() como está inviabiliza portabilidade para outros bancos de dados.
+    * Este teste serve para evitar regressão.
+    */
     [Fact]
     public void ProveRoundingBugSemBancoDeDados()
     {

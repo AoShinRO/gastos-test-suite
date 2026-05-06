@@ -1,33 +1,35 @@
-using MinhasFinancas.Domain.Entities;
 using Xunit;
+using MinhasFinancas.Domain.Entities;
+using MinhasFinancas.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace MinhasFinancas.Tests.Unit;
 
 #pragma warning disable CS1591
 #pragma warning disable CA1707
+#pragma warning disable CS8602
 
-/// <summary>
-/// Testes unitários para a entidade Categoria.
-/// </summary>
 public sealed class CategoriaTests : IDisposable
-{
-    /// <summary>
-    /// Prova que o sistema permite descrições inválidas (vazias ou com SQL Injection) na Categoria.
-    /// </summary>
-    [Theory]
-    [InlineData("")]
-    [InlineData("'; DROP TABLE Categorias; --")]
-    public void ValidarSanitizacaoDescricaoCategoria(string descricaoInvalida)
+{   
+    /*
+    * Verifica se o EF Core criou colunas "fantasmas" devido a falha de mapeamento.
+    */
+    [Fact]
+    public void Evidencia_Fantasmas_No_Banco_De_Dados()
     {
-        // Arrange
-        var categoria = new Categoria();
-
-        // Act
-        categoria.Descricao = descricaoInvalida;
-
-        // Assert
-        // O teste documenta que o domínio aceita strings vazias ou maliciosas sem sanitização
-        Assert.Equal(descricaoInvalida, categoria.Descricao);
+        var options = new DbContextOptionsBuilder<MinhasFinancasDbContext>()
+            .UseInMemoryDatabase(databaseName: "BugEvidenceDb")
+            .Options;
+        using var context = new MinhasFinancasDbContext(options);
+        // Busca propriedades que existem no banco mas NÃO na classe C#
+        var shadowProperties = context.Model.FindEntityType(typeof(Transacao))
+            .GetProperties()
+            .Where(p => p.IsShadowProperty())
+            .Select(p => p.Name)
+            .ToList();
+        // Se o teste FALHAR aqui, é porque CategoriaId1 existe!
+        Assert.Empty(shadowProperties); 
     }
 
     public void Dispose()
