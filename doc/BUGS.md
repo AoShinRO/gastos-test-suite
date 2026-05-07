@@ -18,9 +18,9 @@ Os itens estão organizados por nível de impacto e priorizam regras de negócio
 
 **Resumo:**  
 Dados são persistidos sem sanitização nas entidades.
-
-**Impacto:**
-Permite armazenamento persistente de payloads maliciosos (Stored XSS),
+ 
+**Impacto:**                                                         
+Permite armazenamento persistente de payloads maliciosos (Stored XSS),                           
 abrindo vetor de ataque para múltiplos clientes consumidores da API.
 
 **Evidência:**  
