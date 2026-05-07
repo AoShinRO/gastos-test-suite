@@ -3,6 +3,8 @@ using MinhasFinancas.Domain.Entities;
 using MinhasFinancas.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 namespace MinhasFinancas.Tests.Unit;
 
@@ -13,23 +15,34 @@ namespace MinhasFinancas.Tests.Unit;
 public sealed class CategoriaTests : IDisposable
 {
     /*
-    * Este teste evidencia a presença de colunas "fantasmas" criadas pelo EF Core devido a falha de mapeamento.
+    * Valida a regra de Cadastro de Categoria e sua persistência no banco de dados.
     */
-    [Fact(Skip = "Comportamento identificado: Shadow Properties indicam possível falha de mapeamento no EF Core.")]
-    public void Evidencia_Fantasmas_No_Banco_De_Dados()
+    [Fact]
+    public async Task ValidaRegraCategoriaCadastroEPersistencia()
     {
+        // Arrange
         var options = new DbContextOptionsBuilder<MinhasFinancasDbContext>()
-            .UseInMemoryDatabase(databaseName: "BugEvidenceDb")
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
+
         using var context = new MinhasFinancasDbContext(options);
-        // Busca propriedades que existem no banco mas NÃO na classe C#
-        var shadowProperties = context.Model.FindEntityType(typeof(Transacao))
-            .GetProperties()
-            .Where(p => p.IsShadowProperty())
-            .Select(p => p.Name)
-            .ToList();
-        // Evidencia que existem shadow properties
-        Assert.NotEmpty(shadowProperties);
+        
+        var novaCategoria = new Categoria 
+        { 
+            Descricao = "Educação", 
+            Finalidade = Categoria.EFinalidade.Despesa 
+        };
+
+        // Act
+        context.Categorias.Add(novaCategoria);
+        await context.SaveChangesAsync();
+
+        // Assert
+        var categoriaNoBanco = await context.Categorias.FirstOrDefaultAsync(c => c.Descricao == "Educação");
+        
+        Assert.NotNull(categoriaNoBanco);
+        Assert.Equal(Categoria.EFinalidade.Despesa, categoriaNoBanco.Finalidade);
+        Assert.NotEqual(Guid.Empty, categoriaNoBanco.Id); // Garante que o EF gerou o ID corretamente
     }
 
     public void Dispose()

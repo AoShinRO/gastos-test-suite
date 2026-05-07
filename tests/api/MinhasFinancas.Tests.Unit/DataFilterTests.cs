@@ -16,7 +16,7 @@ public sealed class DataFilterTests : IDisposable
     * Manter Normalize() como está inviabiliza portabilidade para outros bancos de dados.
     */
     [Fact(Skip = "Comportamento identificado: O uso de AddTicks(-1) na função Normalize() causa inclusão indevida de registros do mês seguinte no SQL Server.")]
-    public void Evidencia_Bug_Arredondamento()
+    public void EvidenciaFalhaInconsistenciaPorArredondamento()
     {
         // Filtro para Maio de 2026
         var filter = new DataFilter { Mes = 5, Ano = 2026 };

@@ -16,17 +16,95 @@ namespace MinhasFinancas.Tests.Unit;
 public sealed class TransacaoTests : IDisposable
 {
     /*
+    * Evidencia a inconsistência entre o atributo [Range] que usa double.MaxValue 
+    * e a propriedade que é decimal (limites incompatíveis).
+    */
+    [Fact(Skip = "Comportamento identificado: Atributo [Range] inconsistente com tipo decimal, indicando inconsistência entre validação e tipo numérico utilizado")]
+    public void EvidenciaFalhaRangeInconsistenteNoDominio()
+    {
+        // 1e30 é um valor que cabe em um 'double'
+        // mas é muito maior que o 'decimal.MaxValue' (aprox 7.9e28).
+        double valorIncompativel = 1e30; 
+        var transacao = new Transacao();
+        var contexto = new ValidationContext(transacao) { MemberName = nameof(Transacao.Valor) };
+        var resultados = new List<ValidationResult>();
+
+        // Usamos TryValidateProperty para validar os atributos da propriedade 'Valor'
+        bool aprovadoPeloAtributo = Validator.TryValidateProperty(
+            valorIncompativel, 
+            contexto, 
+            resultados
+        );
+        
+        Assert.True(aprovadoPeloAtributo, "Bug Confirmado: O Atributo [Range] deveria bloquear valores maiores que o limite acima do tipo decimal.");
+    }
+
+    /*
+    * Evidencia que o domínio aceita valores negativos que o front-end tenta proibir 
+    * e comentário na definição de Transacao.Valor afirma que não aceitaria.
+    */
+    [Fact(Skip = "Comportamento identificado: O domínio aceita valores negativos, contrariando regra de negócio e comentário no código.")]
+    public void EvidenciaFalhaValorNegativoNoDominio()
+    {
+        var transacao = new Transacao { Descricao = "Valor Negativo" };
+        transacao.Valor = -100.00m;
+        Assert.True(transacao.Valor < 0, "O sistema não deveria aceitar valores negativos no domínio.");
+    }
+
+    /*
+    * Evidencia que o sistema recebe dados inválidos e não realiza validação.
+    */
+    [Theory(Skip = "Comportamento identificado: Os Domínios recebem dados inválidos e não realizam validação")]
+    [InlineData("<script>alert(1)</script>", Transacao.ETipo.Despesa, Categoria.EFinalidade.Despesa)]
+    [InlineData("", Transacao.ETipo.Despesa, Categoria.EFinalidade.Despesa)]    
+    public void EvidenciaFalhaInconsistenciaDadosInvalidos(string stringMaliciosa, Transacao.ETipo tipoTransacao, Categoria.EFinalidade finalidade)
+    {
+        // Arrange
+        // Evidencia que os três domínios, Pessoa, Categoria e Transacao,
+        // recebem dados inválidos e não realiza validação.
+        var pessoa = new Pessoa
+        {
+            Nome = stringMaliciosa,
+            DataNascimento = DateTime.Today.AddYears(99)
+        };
+
+        var categoria = new Categoria
+        {
+            Descricao = stringMaliciosa,
+            Finalidade = finalidade
+        };
+
+        var transacao = new Transacao
+        {
+            Descricao = stringMaliciosa,
+            Valor = 1.0m,
+            Tipo = tipoTransacao
+        };
+
+        // Act & Assert
+        // Uso de reflection para simular atribuição interna controlada pelo domínio
+        var pessoaProp = typeof(Transacao).GetProperty("Pessoa");
+        var categoriaProp = typeof(Transacao).GetProperty("Categoria");
+
+        pessoaProp?.SetValue(transacao, pessoa);
+        categoriaProp?.SetValue(transacao, categoria);
+
+        Assert.Equal(pessoa.Id, transacao.PessoaId);
+        Assert.Equal(1.0m, transacao.Valor);
+    }
+
+    /*
     * Valida se o sistema permite ou bloqueia transações para pessoas que fazem 18 anos amanhã, previne regressão de regra de negócio.
     */
     [Theory]
-    [InlineData(Transacao.ETipo.Despesa, Categoria.EFinalidade.Despesa)]
-    [InlineData(Transacao.ETipo.Receita, Categoria.EFinalidade.Receita)]
-    public void Valida_Regra_Transacao_Proibido_Para_Menor_Quase_Adulto(Transacao.ETipo tipoTransacao, Categoria.EFinalidade finalidade)
+    [InlineData("Despesa", Transacao.ETipo.Despesa, Categoria.EFinalidade.Despesa)]
+    [InlineData("Receita", Transacao.ETipo.Receita, Categoria.EFinalidade.Receita)]
+    public void ValidaRegraTransacaoProibidoParaMenorQuaseAdulto(string desc, Transacao.ETipo tipoTransacao, Categoria.EFinalidade finalidade)
     {
         // Arrange
         var pessoa = new Pessoa
         {
-            Nome = "Jovem Gafanhoto",
+            Nome = "Jovem",
             DataNascimento = DateTime.Today.AddYears(-18).AddDays(1)
         };
 
@@ -38,12 +116,13 @@ public sealed class TransacaoTests : IDisposable
 
         var transacao = new Transacao
         {
-            Descricao = "Teste",
+            Descricao = desc,
             Valor = 1.0m,
             Tipo = tipoTransacao
         };
 
         // Act & Assert
+        // Uso de reflection para simular atribuição interna controlada pelo domínio
         var pessoaProp = typeof(Transacao).GetProperty("Pessoa");
         var categoriaProp = typeof(Transacao).GetProperty("Categoria");
 
@@ -66,62 +145,6 @@ public sealed class TransacaoTests : IDisposable
             Assert.Equal(1.0m, transacao.Valor);
         }
     }
-    
-    /*
-    * Valida a precisão decimal em somas sucessivas (evitando imprecisão binária).
-    * Isso é importante para evitar erros de arredondamento em transações financeiras,
-    * apesar de .NET lidar bem com floats, previne regressão de regra de negócio.
-    */
-    [Fact]
-    public void Valida_Regra_Soma_Centavos_Exatos()
-    {
-        // Cenário: 10 transações de 0.10
-        decimal soma = 0m;
-        decimal valorUnitario = 0.1m;
-
-        for (int i = 0; i < 10; i++)
-        {
-            var t = new Transacao { Valor = valorUnitario };
-            soma += t.Valor;
-        }
-
-        Assert.Equal(1.0m, soma);
-    }
-
-    /*
-    * Evidencia que o domínio aceita valores que o front-end tenta proibir.
-    */
-    [Fact(Skip = "Comportamento identificado: O domínio permite valores negativos, podendo contrariar regra de negócio.")]
-    public void Evidencia_Valor_Negativo_No_Dominio()
-    {
-        var transacao = new Transacao { Descricao = "Valor Negativo" };
-        transacao.Valor = -100.00m;
-        Assert.True(transacao.Valor < 0, "O sistema não deveria aceitar valores negativos no domínio.");
-    }
-
-    /*
-    * Evidencia a inconsistência entre o atributo [Range] que usa double.MaxValue 
-    * e a propriedade que é decimal (limites incompatíveis).
-    */
-    [Fact(Skip = "Comportamento identificado: Atributo [Range] inconsistente com tipo decimal, indicando inconsistência entre validação e tipo numérico utilizado")]
-    public void Evidencia_Range_Inconsistencia_No_Dominio()
-    {
-        // 1e30 é um valor que cabe em um 'double'
-        // mas é muito maior que o 'decimal.MaxValue' (aprox 7.9e28).
-        double valorIncompativel = 1e30; 
-        var transacao = new Transacao();
-        var contexto = new ValidationContext(transacao) { MemberName = nameof(Transacao.Valor) };
-        var resultados = new List<ValidationResult>();
-
-        // Usamos TryValidateProperty para validar os atributos da propriedade 'Valor'
-        bool aprovadoPeloAtributo = Validator.TryValidateProperty(
-            valorIncompativel, 
-            contexto, 
-            resultados
-        );
-        
-        Assert.True(aprovadoPeloAtributo, "Bug Confirmado: O Atributo [Range] deveria bloquear valores maiores que o limite acima do tipo decimal.");
-    }
 
     private MinhasFinancasDbContext? _context;
 
@@ -129,7 +152,7 @@ public sealed class TransacaoTests : IDisposable
     * Valida exclusão em cascata de transações ao excluir pessoa
     */
     [Fact]
-    public async Task Valida_Regra_Exclusao_Em_Cascata_Deve_Limpar_Transacoes()
+    public async Task ValidaRegraExclusaoEmCascataLimpaTransacoes()
     {
 
         var options = new DbContextOptionsBuilder<MinhasFinancasDbContext>()
@@ -146,8 +169,9 @@ public sealed class TransacaoTests : IDisposable
         await _context.SaveChangesAsync();
 
         var transacao = new Transacao { Tipo = Transacao.ETipo.Despesa, Valor = 50, Data = DateTime.Today };
-        typeof(Transacao).GetProperty("Pessoa").SetValue(transacao, pessoa);
-        typeof(Transacao).GetProperty("Categoria").SetValue(transacao, categoria);
+        // Uso de reflection para simular atribuição interna controlada pelo domínio
+        typeof(Transacao).GetProperty("Pessoa")!.SetValue(transacao, pessoa);
+        typeof(Transacao).GetProperty("Categoria")!.SetValue(transacao, categoria);
         
         _context.Transacoes.Add(transacao);
         await _context.SaveChangesAsync();
@@ -163,8 +187,8 @@ public sealed class TransacaoTests : IDisposable
         var transacoesRestantes = await _context.Transacoes.CountAsync();
         Assert.Equal(0, transacoesRestantes);
 
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
+        await _context.Database.EnsureDeletedAsync();
+        await _context.DisposeAsync();
     }
 
     /*
@@ -177,14 +201,15 @@ public sealed class TransacaoTests : IDisposable
     [InlineData(Transacao.ETipo.Receita, Categoria.EFinalidade.Receita, true)]
     [InlineData(Transacao.ETipo.Despesa, Categoria.EFinalidade.Ambas, true)]
     [InlineData(Transacao.ETipo.Receita, Categoria.EFinalidade.Ambas, true)]
-    public void Valida_Regra_Categoria_Deve_Respeitar_Finalidade(Transacao.ETipo tipoTransacao, Categoria.EFinalidade finalidadeCategoria, bool deveFuncionar)
+    public void ValidaRegraCategoriaRespeitaFinalidade(Transacao.ETipo tipoTransacao, Categoria.EFinalidade finalidadeCategoria, bool deveFuncionar)
     {
         // Arrange
         var categoria = new Categoria { Finalidade = finalidadeCategoria };
         var transacao = new Transacao { Tipo = tipoTransacao };
 
         // Act & Assert
-        var prop = typeof(Transacao).GetProperty("Categoria");
+        // Uso de reflection para simular atribuição interna controlada pelo domínio
+        var prop = typeof(Transacao).GetProperty("Categoria")!;
 
         if (deveFuncionar)
         {
@@ -198,7 +223,30 @@ public sealed class TransacaoTests : IDisposable
         }
     }
 
+    /*
+    * Valida comportamento esperado de precisão decimal em operações financeiras.
+    * Este teste garante que o uso de decimal mantém exatidão em somas sucessivas,
+    * evitando problemas comuns de precisão binária (float/double).
+    * Não evidencia falha atual, mas atua como proteção contra regressão.
+    */
+    [Fact]
+    public void ValidaRegraSomaCentavosExatos()
+    {
+        // Cenário: 10 transações de 0,10 centavos.
+        decimal soma = 0m;
+        decimal valorUnitario = 0.1m;
+
+        for (int i = 0; i < 10; i++)
+        {
+            var t = new Transacao { Valor = valorUnitario };
+            soma += t.Valor;
+        }
+
+        Assert.Equal(1.0m, soma);
+    }
+
     public void Dispose()
     {
+        _context?.Dispose();
     }
 }
