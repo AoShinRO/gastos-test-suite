@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('PoCs de Segurança Ofensiva (API Bypass)', () => {
+test.describe('PoC Validacao de Seguranca (API Bypass)', () => {
 
   // Foi necessário substituir o localhost por 127.0.0.1 para rodar no Github Action, 
   // pois o localhost não funcionou. Em caso de problemas para rodar local
