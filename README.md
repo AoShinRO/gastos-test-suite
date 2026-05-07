@@ -147,7 +147,7 @@ Durante a análise foram identificados problemas relacionados a:
 
 📂 Detalhamento completo disponível em:
 
-[Bugs Encontrados](https://github.com/AoShinRO/gastos-test-suite/doc/BUGS.md)
+[Bugs Encontrados](https://github.com/AoShinRO/gastos-test-suite/blob/main/doc/BUGS.md)
 
 ---
 
@@ -211,7 +211,7 @@ riscos de evolução do sistema e inconsistências entre camadas.
     │       └── TransacaoTests.cs
     └── web/
         ├── LogicaContabil.spec.ts
-        ├── SegurancaOfensiva.spec.ts
+        ├── ValidacaoSeguranca.spec.ts
         └── playwright.config.ts
 
 ```
