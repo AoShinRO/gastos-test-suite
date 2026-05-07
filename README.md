@@ -35,10 +35,6 @@ Avaliar o sistema existente através de:
 
 ❌ Categoria fora da finalidade -> Gera exception não tratada (erro 500)
 
-❌ Persistência sem sanitização -> Vulnerável a Stored XSS
-
-❌ Cache inconsistente -> Totais não refletem dados atualizados após operações
-
 ---
 
 # 🧱 Estrutura da Pirâmide de Testes
