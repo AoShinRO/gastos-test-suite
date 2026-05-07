@@ -1,33 +1,48 @@
-using MinhasFinancas.Domain.Entities;
 using Xunit;
+using MinhasFinancas.Domain.Entities;
+using MinhasFinancas.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 namespace MinhasFinancas.Tests.Unit;
 
 #pragma warning disable CS1591
 #pragma warning disable CA1707
+#pragma warning disable CS8602
 
-/// <summary>
-/// Testes unitários para a entidade Categoria.
-/// </summary>
 public sealed class CategoriaTests : IDisposable
 {
-    /// <summary>
-    /// Prova que o sistema permite descrições inválidas (vazias ou com SQL Injection) na Categoria.
-    /// </summary>
-    [Theory]
-    [InlineData("")]
-    [InlineData("'; DROP TABLE Categorias; --")]
-    public void ValidarSanitizacaoDescricaoCategoria(string descricaoInvalida)
+    /*
+    * Valida a regra de Cadastro de Categoria e sua persistência no banco de dados.
+    */
+    [Fact]
+    public async Task ValidaRegraCategoriaCadastroEPersistencia()
     {
         // Arrange
-        var categoria = new Categoria();
+        var options = new DbContextOptionsBuilder<MinhasFinancasDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new MinhasFinancasDbContext(options);
+        
+        var novaCategoria = new Categoria 
+        { 
+            Descricao = "Educação", 
+            Finalidade = Categoria.EFinalidade.Despesa 
+        };
 
         // Act
-        categoria.Descricao = descricaoInvalida;
+        context.Categorias.Add(novaCategoria);
+        await context.SaveChangesAsync();
 
         // Assert
-        // O teste documenta que o domínio aceita strings vazias ou maliciosas sem sanitização
-        Assert.Equal(descricaoInvalida, categoria.Descricao);
+        var categoriaNoBanco = await context.Categorias.FirstOrDefaultAsync(c => c.Descricao == "Educação");
+        
+        Assert.NotNull(categoriaNoBanco);
+        Assert.Equal(Categoria.EFinalidade.Despesa, categoriaNoBanco.Finalidade);
+        Assert.NotEqual(Guid.Empty, categoriaNoBanco.Id); // Garante que o EF gerou o ID corretamente
     }
 
     public void Dispose()

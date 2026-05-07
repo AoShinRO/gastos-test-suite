@@ -44,14 +44,17 @@ jobs:
             echo "Testes injetados com sucesso."
             ls ./api/MinhasFinancas.Tests.Unit/
           else
-            echo "Erro: Pasta de testes não encontrada no repositório!"
+            echo "Erro: Pasta de testes unitarios não encontrada no repositório!"
             exit 1
           fi
-
-          # mkdir -p ./api/MinhasFinancas.Tests.Integration
-          # cp -v ./tests/api/MinhasFinancas.Tests.Integration/* ./api/MinhasFinancas.Tests.Integration/ 2>/dev/null || true
-
-          # cp -v ./tests/web/vitest/* ./web/src/tests/ 2>/dev/null || true
+          mkdir -p ./web/
+          if [ -d "./tests/web" ]; then
+            cp -v ./tests/web/*.ts ./web/
+            echo "Testes injetados com sucesso."
+          else
+            echo "Erro: Pasta de testes E2E não encontrada no repositório!"
+            exit 1
+          fi
 
       - name: Flatten Infrastructure Folder
         run: |
@@ -112,6 +115,55 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}
           path: "**/*.trx"
+
+  playwright-tests:
+    name: E2E Tests (Playwright)
+    needs: setup-environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Prepared App
+        uses: actions/download-artifact@v8
+        with:
+          name: prepared-app
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Playwright and Dependencies
+        run: |
+          bun install
+          bun add @playwright/test -d
+        working-directory: web
+
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps
+        working-directory: web
+
+      - name: Start API (Background)
+        run: |
+          API_PATH=$(find api -name "MinhasFinancas.API.csproj" | head -n 1)
+          dotnet run --project "$API_PATH" &
+          echo "Aguardando API subir..."
+          sleep 15
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+
+      - name: Run Playwright tests
+        run: bunx playwright test
+        working-directory: web
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report
+          path: web/playwright-report/
 
   analyze:
     name: Analyze ${{ matrix.language }}
